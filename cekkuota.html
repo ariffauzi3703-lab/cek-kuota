@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Kuota XL/AXIS - Sidompul</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #2c3e50; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #219150; }
+        #result { margin-top: 20px; white-space: pre-wrap; font-size: 14px; background: #eee; padding: 10px; border-radius: 5px; display: none; }
+        .loading { text-align: center; display: none; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Cek Kuota Sidompul</h2>
+    <input type="text" id="nomor" placeholder="Masukkan Nomor (Contoh: 0819...)">
+    <button onclick="cekKuota()">Cek Kuota Sekarang</button>
+    
+    <div id="loading" class="loading">Sabar ya, lagi nanya server...</div>
+    <div id="result"></div>
+</div>
+
+<script>
+async function cekKuota() {
+    const nomor = document.getElementById('nomor').value;
+    const resultDiv = document.getElementById('result');
+    const loading = document.getElementById('loading');
+
+    if(!nomor) return alert("Isi nomornya dulu bro!");
+
+    // Format nomor
+    let msisdn = nomor;
+    if (nomor.startsWith('08')) msisdn = '62' + nomor.slice(1);
+
+    loading.style.display = 'block';
+    resultDiv.style.display = 'none';
+
+    try {
+        const url = `https://apigw.kmsp-store.com/sidompul/v4/cek_kuota?msisdn=${msisdn}&isJSON=true`;
+        const response = await fetch(url, {
+            headers: {
+                "Authorization": "Basic c2lkb21wdWxhcGk6YXBpZ3drbXNw",
+                "X-API-Key": "60ef29aa-a648-4668-90ae-20951ef90c55",
+                "X-App-Version": "4.0.0"
+            }
+        });
+
+        const res = await response.json();
+
+        if (res.status === true) {
+            const data = res.data;
+            const sp = data.data_sp;
+            let hasilAkhir = `Operator: ${sp.prefix.value}\nMasa Aktif: ${sp.active_period.value}\n\nDETAIL KUOTA:\n${data.hasil.replace(/<br>/g, '\n')}`;
+            
+            resultDiv.innerText = hasilAkhir;
+            resultDiv.style.display = 'block';
+        } else {
+            resultDiv.innerText = "Gagal: " + (res.data.keteranganError || "Nomor salah");
+            resultDiv.style.display = 'block';
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+</script>
+
+</body>
+</html>
